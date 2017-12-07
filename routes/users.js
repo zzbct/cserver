@@ -19,14 +19,73 @@ router.get('/', function(req, res, next) {
 });
 
 router.get('/goals',function (req,res) {
-  var sql = `SELECT CheckItem FROM reviewitem where Stage='${req.query.stage}' and Customize=${req.query.character}`
+  var phase = '';
+  var stage = req.query.stage;
+  var character = req.query.character;
+  var threshold = req.query.threshold;
+  var state = req.query.state;
+  var result = req.query.result;
+  if (stage && stage !== 'all') {
+    phase += `Stage='${stage}'`;
+  }
+  if (character && character !== 'all') {
+    var customize = character === '标准'? 2 : 1;
+    phase += (phase.length? ' and ' : '') + `Customize=${customize}`;
+  }
+  if (threshold && threshold !== 'all') {
+    if (threshold === '未设定') {
+      phase += (phase.length? ' and ' : '') + 'threshold is null';
+    } else {
+      phase += (phase.length? ' and ' : '') + 'threshold is not null';
+    }
+  }
+  if (state && state !== 'all') {
+    if (state === '未论证') {
+      phase += (phase.length? ' and ' : '') + 'result is null';
+    } else {
+      phase += (phase.length? ' and ' : '') + 'result is not null';
+    }
+  }
+  if (result && result !== 'all') {
+    if (result === '未达到要求') {
+      phase += (phase.length? ' and ' : '') + 'result < threshold';
+    } else {
+      phase += (phase.length? ' and ' : '') + 'result >= threshold';
+    }
+  }
+
+  phase = phase.length? ('where '+ phase) : '';
+  var sql = `SELECT * FROM reviewitem ${phase}`
+  console.log(sql)
   db.query(sql,function (err, result) {
     if(err){
       console.log('[SELECT ERROR] - ',err.message);
       return;
     }
     //把搜索值输出
-    res.send(result);
+    var set = [];
+    result.forEach((item) => {
+      var t;
+      if(!item.threshold) {
+        t = '无';
+      } else if(!item.result) {
+        t = '无';
+      } else{
+        t = item.result >= item.threshold ? `达到要求(${item.threshold})` : `未达到要求(${item.threshold})`
+      }
+      var obj = {
+        ID: item.ID,
+        CheckItem: item.CheckItem,
+        Stage: item.Stage,
+        Customize: item.Customize === 1 ? '自定义' : '标准',
+        threshold: item.threshold? item.threshold : '未设定',
+        state: item.result? item.result : '未论证',
+        result: t,
+        writable: false
+      }
+      set.push(obj)
+    })
+    res.send(set);
   });
 })
 
@@ -49,5 +108,22 @@ router.get('/subgoals',function (req,res) {
     })
   });
 
+})
+
+router.post('/threshold',function (req,res) {
+  var sql;
+  if(req.body.threshold.length) {
+    sql = `UPDATE reviewitem SET threshold=${req.body.threshold} WHERE ID = ${req.body.ID}`
+  } else {
+    sql = `UPDATE reviewitem SET threshold=null WHERE ID = ${req.body.ID}`
+  }
+  db.query(sql,function (err, result) {
+    if(err){
+      console.log('[SELECT ERROR] - ',err.message);
+      return;
+    } else {
+      console.log('affectedRows: '+result.affectedRows);
+    }
+  });
 })
 module.exports = router;
