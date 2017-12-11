@@ -1,4 +1,5 @@
 var express = require('express');
+var http = require('http')
 var db = require('../db');
 var router = express.Router();
 
@@ -88,8 +89,8 @@ router.get('/goals',function (req,res) {
     res.send(set);
   });
 })
-
-router.get('/subgoals',function (req,res) {
+/*获取单目标的子目标（parent）*/
+router.get('/subgoals/parent',function (req,res) {
   var sql1 = `SELECT ID FROM reviewitem where CheckItem='${req.query.parent}'`
   db.query(sql1,function (err, result) {
     if(err || result.length == 0){
@@ -107,23 +108,37 @@ router.get('/subgoals',function (req,res) {
       res.send(result)
     })
   });
-
 })
 
-router.post('/threshold',function (req,res) {
-  var sql;
-  if(req.body.threshold.length) {
-    sql = `UPDATE reviewitem SET threshold=${req.body.threshold} WHERE ID = ${req.body.ID}`
-  } else {
-    sql = `UPDATE reviewitem SET threshold=null WHERE ID = ${req.body.ID}`
-  }
+/*获取单目标的子目标（cid）*/
+router.get('/argu/subs',function (req,res) {
+  var id = req.query.id;
+  var sql = `SELECT EviItem FROM eviitem where RefRItem=${id}`
   db.query(sql,function (err, result) {
-    if(err){
-      console.log('[SELECT ERROR] - ',err.message);
+    if (err) {
+      console.log('[SELECT ERROR] - ', err.message);
       return;
-    } else {
-      console.log('affectedRows: '+result.affectedRows);
     }
-  });
+    res.send(result)
+  })
+})
+/*获取论证目标信息（cid）*/
+router.get('/argu/goal',function (req,res) {
+  var id = req.query.id;
+  var sql = `SELECT * FROM reviewitem WHERE ID=${id}`
+  db.query(sql,function (err, result) {
+    if (err) {
+      console.log('[SELECT ERROR] - ', err.message);
+      return;
+    }
+    console.log(result)
+    var item = result[0]
+    var obj = {
+      ID: item.ID,
+      CheckItem: item.CheckItem,
+      threshold: item.threshold? item.threshold : '未设定'
+    }
+    res.send(obj)
+  })
 })
 module.exports = router;
