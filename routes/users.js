@@ -131,7 +131,6 @@ router.get('/argu/goal',function (req,res) {
       console.log('[SELECT ERROR] - ', err.message);
       return;
     }
-    console.log(result)
     var item = result[0]
     var obj = {
       ID: item.ID,
@@ -140,5 +139,32 @@ router.get('/argu/goal',function (req,res) {
     }
     res.send(obj)
   })
+})
+
+/*获取论证目标信息（cid, id, auth）*/
+router.get('/argu/evis',function (req,res) {
+  var cId = req.query.cId
+  var id = req.query.id
+  var auth = req.query.auth
+  var url = `http://192.168.109.140:8080/yw/review/getItemForm?RefRItem=${cId}`
+  var opt = {
+    host:'192.168.109.140',
+    port:'8080',
+    path: url,
+    method:'GET',
+    headers: {
+      'Content-Type': 'application/json;charset=UTF-8',
+      'ID': id,
+      'Auth': auth
+    },
+  }
+  var request = http.request(opt, function(resq) {
+    resq.on('data',function(data){
+      res.send(data)
+    })
+  }).on('error', function(e) {
+    console.log("Got error: " + e.message)
+  })
+  request.end()
 })
 module.exports = router;
