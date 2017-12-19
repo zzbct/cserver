@@ -5,10 +5,10 @@ var router = express.Router();
 /* put users listing. */
 router.get('/', function(req,res){
   var opt={
-    host:'192.168.109.140',
-    port:'8080',
+    host:'192.168.109.111',
+    port:'8000',
     method:'GET',
-    path:'http://192.168.109.140:8080/sunapp/rItem/review?stage=SOI1&passed=3&cus=0',
+    path:'http://192.168.109.111:8000/sunapp/rItem/review?stage=SOI1&passed=3&cus=0',
     headers:{
       ID: 2,
       Auth: 'A8FKQSVM'

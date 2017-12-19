@@ -7,17 +7,17 @@ var router = express.Router();
 /* GET login page. */
 router.post('/', function(req,res){
   var opt={
-    host:'192.168.109.140',
+    host:'192.168.109.111',
     port:'8080',
     method:'POST',
-    path:'http://192.168.109.140:8080/sunapp/login',
+    path:'http://192.168.109.111:8080/sunapp/login',
     headers: {
       'Content-Type': 'application/json;charset=UTF-8'
     }
   };
   var content = {
     UserName: req.body.user,
-    Password: req.body.passward
+    Password: req.body.password
   }
   var request = http.request(opt, function(resq) {
     resq.on('data',function(data){

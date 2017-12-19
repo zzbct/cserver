@@ -1,7 +1,11 @@
 var express = require('express');
 var http = require('http')
-var db = require('../db');
+var DB = require('../db');
+var Evi = require('../public/javascripts/Evi')
 var router = express.Router();
+
+var db = DB.comDB
+var argu = DB.argDB
 
 db.connect();
 var  sql = 'SELECT * FROM user'; //获取用户信息
@@ -146,9 +150,9 @@ router.get('/argu/evis',function (req,res) {
   var cId = req.query.cId
   var id = req.query.id
   var auth = req.query.auth
-  var url = `http://192.168.109.140:8080/yw/review/getItemForm?RefRItem=${cId}`
+  var url = `http://192.168.109.111:8080/yw/review/getItemForm?RefRItem=${cId}`
   var opt = {
-    host:'192.168.109.140',
+    host:'192.168.109.111',
     port:'8080',
     path: url,
     method:'GET',
@@ -158,9 +162,35 @@ router.get('/argu/evis',function (req,res) {
       'Auth': auth
     },
   }
+  var factor = [['工具收集', '人力收集'], ['精通', '熟练', '较熟练', '基本了解', '其它'], ['强', '较强', '一般', '弱', '较弱']]
   var request = http.request(opt, function(resq) {
+    let datas = ''
     resq.on('data',function(data){
-      res.send(data)
+      datas += data
+    })
+    resq.on('end',function(){
+      datas = JSON.parse(datas)
+      let evis = datas.ItemForm[0].eviForm
+      //根据因素获得证据置信度
+      //将因素转为中文描述
+      evis.map( (evi) => {
+        let evilist = evi.evilist[0]
+        console.log(evilist)
+        let source = evilist.eviSource.charCodeAt() - 97
+        let familiarity = evilist.eviFamiliarity.charCodeAt() - 97
+        let suppAccess = evilist.eviSuppAccess.charCodeAt() - 97
+        let [pass, uncertain, fail] = Evi.Confidence(source, familiarity, suppAccess)
+        evilist['pass'] = pass
+        evilist['uncertain'] = uncertain
+        evilist['fail'] = fail
+        evilist.eviSource = factor[0][source]
+        evilist.eviFamiliarity = factor[1][familiarity]
+        evilist.eviSuppAccess = factor[2][suppAccess]
+        evi.evilist = evilist
+        return true
+      })
+      datas.ItemForm = datas.ItemForm[0]
+      res.send(datas)
     })
   }).on('error', function(e) {
     console.log("Got error: " + e.message)
