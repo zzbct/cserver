@@ -14,8 +14,9 @@ function Mode(str, data, id) {
   var same
   while (a !== -1) {
     let  tmp = `s${idx}`
+    let phase = str.slice(a+1, b)
     idx++
-    res = single(str.slice(a+1, b),data)
+    res = single(phase,data)
     data.push({
       dict: tmp,
       confidence: res
@@ -35,7 +36,7 @@ function Mode(str, data, id) {
         return;
       } else{
         if (result.affectedRows == 0) {
-          sql1 = `insert into eviitem(RefRItem,EviItem,Dict,Confidence) values(${id},'暂存','${tmp}','${c}')`
+          sql1 = `insert into eviitem(RefRItem,EviItem,Dict,Confidence) values(${id},'暂存${phase}','${tmp}','${c}')`
           db.query(sql1, function (err, result) {
             if (err) {
               console.log('[SELECT ERROR] - ', err.message);
