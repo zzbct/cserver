@@ -117,7 +117,7 @@ router.get('/subgoals/parent',function (req,res) {
 /*获取单目标的子目标（cid）*/
 router.get('/argu/subs',function (req,res) {
   var id = req.query.id;
-  var sql = `SELECT EviItem FROM eviitem where RefRItem=${id}`
+  var sql = `SELECT EviItem,dict,eviID FROM eviitem where RefRItem=${id}`
   db.query(sql,function (err, result) {
     if (err) {
       console.log('[SELECT ERROR] - ', err.message);
@@ -139,7 +139,9 @@ router.get('/argu/goal',function (req,res) {
     var obj = {
       ID: item.ID,
       CheckItem: item.CheckItem,
-      threshold: item.threshold? item.threshold : '未设定'
+      threshold: item.threshold? item.threshold : '未设定',
+      mode: item.Mode,
+      result: item.result? item.result : '未论证'
     }
     res.send(obj)
   })
@@ -175,7 +177,6 @@ router.get('/argu/evis',function (req,res) {
       //将因素转为中文描述
       evis.map( (evi) => {
         let evilist = evi.evilist[0]
-        console.log(evilist)
         let source = evilist.eviSource.charCodeAt() - 97
         let familiarity = evilist.eviFamiliarity.charCodeAt() - 97
         let suppAccess = evilist.eviSuppAccess.charCodeAt() - 97
@@ -197,4 +198,38 @@ router.get('/argu/evis',function (req,res) {
   })
   request.end()
 })
+
+/*执行论证
+* {mode, refItem, confidenceInfo: {dict, pass, uncertain, fail}
+* */
+router.post('/argu/results',function (req,res) {
+  var mode = req.body.mode
+  var id = req.body.refItem
+  var cInfo = req.body.confidenceInfo
+  var argu = [] //聚拢支持同一目标的证据信息
+  var dict = [] //辅助空间
+  /*
+  聚拢支持同一目标的证据信息
+  * [ { dict: 1, evidence: [ [Object], [Object] ] },
+      { dict: 2, evidence: [ [Object] ] },
+      { dict: 3, evidence: [ [Object] ] }
+    ]
+*/
+  cInfo.forEach((item) => {
+    var pos = dict.indexOf(item.dict)
+    if (pos != -1) {
+      let unit = argu[pos]
+      unit.evidence.push({pass:item.pass, uncertain: item.uncertain, fial: item.fail})
+    } else {
+      dict.push(item.dict)
+      argu.push({
+        dict: item.dict,
+        evidence: [{pass:item.pass, uncertain: item.uncertain, fial: item.fail}]
+      })
+    }
+  })
+  //D-S目标符合性论证
+
+})
+
 module.exports = router;

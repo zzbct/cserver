@@ -11,7 +11,7 @@ const Confidence = function (source, familiarity, suppAccess) {
   var pass = a * b * c
   var uncertain = a * Math.pow(b, 3) * Math.sqrt(c)
   pass = pass.toFixed(2)
-  uncertain = uncertain.toFixed(2)
+  uncertain = pass== 1? 0 : uncertain.toFixed(2)
   var fail = (1 - pass - uncertain).toFixed(2)
   return [pass, uncertain, fail]
 }
@@ -32,4 +32,6 @@ const Cost = function (source, confidence) {
   return cost
 }
 
+/*
+* */
 module.exports = {Confidence, Cost}
