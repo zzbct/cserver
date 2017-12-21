@@ -32,6 +32,43 @@ const Cost = function (source, confidence) {
   return cost
 }
 
-/*
-* */
-module.exports = {Confidence, Cost}
+/*D-S目标符合性论证*/
+const DempsterShafer = function (cSet) {
+  var paramLen = cSet.length
+  var result = []
+  if(paramLen === 0) {
+    return result
+  } else if(paramLen === 1) {
+    return cSet[0]
+  }
+  var xLen = cSet[0].length
+  var xArr = cSet[0].slice()
+  var disK = 0
+
+  for(var i = 0; i < xLen; i++) {
+    if(i === xLen - 1) {
+      for(let j = 1; j < paramLen; j++) {
+        var unit = cSet[j]
+        xArr[i] *= unit[i]
+      }
+    }
+    else {
+      var t1 = 1
+      var t2 = 1
+      for(let j = 0; j < paramLen; j++) {
+        var unit = cSet[j]
+        t1 = t1 * (unit[i] + unit[xLen-1])
+        t2 *= unit[xLen-1]
+      }
+      xArr[i] = t1 - t2
+    }
+    disK += xArr[i]
+  }
+  for(var i = 0; i < xLen; i++) {
+    let tmp = (xArr[i] / disK).toFixed(2)
+    result.push(+tmp)
+  }
+  return result
+}
+
+module.exports = {Confidence, Cost, DempsterShafer}

@@ -61,7 +61,6 @@ router.get('/goals',function (req,res) {
 
   phase = phase.length? ('where '+ phase) : '';
   var sql = `SELECT * FROM reviewitem ${phase}`
-  console.log(sql)
   db.query(sql,function (err, result) {
     if(err){
       console.log('[SELECT ERROR] - ',err.message);
@@ -200,36 +199,66 @@ router.get('/argu/evis',function (req,res) {
 })
 
 /*执行论证
-* {mode, refItem, confidenceInfo: {dict, pass, uncertain, fail}
-* */
+* {mode, refItem, confidenceInfo: {dict, pass, uncertain, fail}*/
 router.post('/argu/results',function (req,res) {
   var mode = req.body.mode
   var id = req.body.refItem
   var cInfo = req.body.confidenceInfo
   var argu = [] //聚拢支持同一目标的证据信息
   var dict = [] //辅助空间
-  /*
-  聚拢支持同一目标的证据信息
-  * [ { dict: 1, evidence: [ [Object], [Object] ] },
-      { dict: 2, evidence: [ [Object] ] },
-      { dict: 3, evidence: [ [Object] ] }
-    ]
-*/
+  /*聚拢支持同一目标的证据信息*/
   cInfo.forEach((item) => {
     var pos = dict.indexOf(item.dict)
     if (pos != -1) {
       let unit = argu[pos]
-      unit.evidence.push({pass:item.pass, uncertain: item.uncertain, fial: item.fail})
+      unit.evidence.push([+item.pass, +item.uncertain, +item.fail])
     } else {
       dict.push(item.dict)
       argu.push({
         dict: item.dict,
-        evidence: [{pass:item.pass, uncertain: item.uncertain, fial: item.fail}]
+        evidence: [[+item.pass, +item.uncertain, +item.fail]]
       })
     }
   })
-  //D-S目标符合性论证
+  /*D-S目标符合性论证*/
+  var sql
+  argu.forEach((item) => {
+    let result = Evi.DempsterShafer(item.evidence)
+    item.confidence = result
+    result = result.join()
+    sql = `UPDATE eviitem SET Confidence='${result}' WHERE RefRItem = ${id} AND Dict = ${item.dict}`
+    db.query(sql,function (err, result) {
+      if (err){
+        res.send({
+          code: 400,
+          msg: '数据库更新错误'
+        })
+        console.log('[SELECT ERROR] - ',err.message);
+        return;
+      } else {
 
+      }
+    })
+  })
+  /*解析论证模式*/
+  /*Bayes目标符合性论证*/
+  console.log(argu)
+})
+
+/*设定阈值*/
+router.post('/threshold',function (req,res) {
+  var sql;
+  if (req.body.threshold.length) {
+    sql = `UPDATE reviewitem SET threshold=${req.body.threshold} WHERE ID = ${req.body.ID}`
+  } else {
+    sql = `UPDATE reviewitem SET threshold=null WHERE ID = ${req.body.ID}`
+  }
+  db.query(sql,function (err, result) {
+    if (err){
+      console.log('[SELECT ERROR] - ',err.message);
+      return;
+    }
+  })
 })
 
 module.exports = router;
