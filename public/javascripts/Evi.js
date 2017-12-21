@@ -71,4 +71,34 @@ const DempsterShafer = function (cSet) {
   return result
 }
 
-module.exports = {Confidence, Cost, DempsterShafer}
+/*Bayes目标符合性论证*/
+const Bayes = function (cSet, logic) {
+  var paramsLen = cSet.length;
+  if(paramsLen === 0) {
+    return [];
+  } else if(paramsLen === 1) {
+    return cSet[0];
+  }
+  var xArr = [1,1,1];
+  if(logic === 1) {
+    for(var i = 0; i < paramsLen; i++) {
+      xArr[0] *= cSet[i][0];
+      xArr[2] *= 1-cSet[i][1];
+    }
+    xArr[2] = xArr[2] - xArr[0];
+    xArr[1] = 1 - xArr[0] - xArr[2];
+  } else if(logic === -1) {
+    for(var i = 0; i < paramsLen; i++) {
+      xArr[0] *= 1-cSet[i][0];
+      xArr[1] *=cSet[i][1];
+    }
+    xArr[0] = 1 - xArr[0]
+    xArr[2] = 1 - xArr[0] - xArr[1]
+    xArr[0].toFixed(2)
+    xArr[1].toFixed(2)
+    xArr[2].toFixed(2)
+  }
+  return xArr.map(Number)
+}
+
+module.exports = {Confidence, Cost, DempsterShafer, Bayes}

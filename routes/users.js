@@ -2,6 +2,7 @@ var express = require('express');
 var http = require('http')
 var DB = require('../db');
 var Evi = require('../public/javascripts/Evi')
+var Mode = require('../public/javascripts/Mode')
 var router = express.Router();
 
 var db = DB.comDB
@@ -241,8 +242,8 @@ router.post('/argu/results',function (req,res) {
     })
   })
   /*解析论证模式*/
+   Mode(mode, argu, id)
   /*Bayes目标符合性论证*/
-  console.log(argu)
 })
 
 /*设定阈值*/
