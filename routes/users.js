@@ -253,6 +253,34 @@ router.get('/cost/static',function (req,res) {
   })
 })
 
+/*执行证据收集分析*/
+router.get('/cost/analyse',function (req,res) {
+  var cId = req.query.cId
+  var id = req.query.id
+  var auth = req.query.auth
+  /*划定提升范围*/
+  var sql1 = `SELECT * FROM reviewitem WHERE ID=${cId}`
+  db.query(sql1, function (err, result1) {  //1获得论证模式、阈值、论证结果
+    if (err) {
+      console.log('[SELECT ERROR] - ', err.message);
+      return;
+    }
+    let item = result1[0]
+    let threshold = item.threshold
+    let mode = item.ModeAfter
+    let rt1 = item.result
+    var sql2 = `SELECT EviItem,dict,confidence FROM eviitem where RefRItem=${cId}`
+    db.query(sql2, function (err, result2) {  //2获得子目标
+      if (err) {
+        console.log('[SELECT ERROR] - ', err.message);
+        return;
+      }
+      let rt2 = result2 //子目标
+      let rt3 = Mode.PaintRange(mode, rt1, threshold, rt2) //提升范围划定结果（未递归）
+    })
+  })
+})
+
 /*执行论证
 * {mode, refItem, confidenceInfo: {dict, pass, uncertain, fail}*/
 router.post('/argu/results',function (req,res) {
@@ -296,7 +324,7 @@ router.post('/argu/results',function (req,res) {
     })
   })
   /*解析论证模式*/
-   Mode(mode, argu, id)
+   Mode.HandleMode(mode, argu, id)
   /*Bayes目标符合性论证*/
 })
 
