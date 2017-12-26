@@ -69,6 +69,7 @@ const PaintRange = function (str, oldV, newV, data) {
   let er
   let ownV
   if (flag === -1) { //或逻辑提升规则
+
     x = 1 - Math.pow(1 - newV, 1/len)
     same.forEach((item) => {
       let arr  = data.filter((unit )=> {
@@ -82,13 +83,18 @@ const PaintRange = function (str, oldV, newV, data) {
         if (unit.dict == item) {
           ownV = unit.confidence.split(',').map(Number)
           sr = ownV[0] < x ? x : ownV[0] + 0.01 //a
-          er = (1 - newV)*(1-ownV[0]) / multi
+          er = 1 - (1 - newV)*(1-ownV[0]) / multi
           er = er > newV ? newV : er //b
+          sr = sr > er ? er : sr
           unit['sr'] = sr.toFixed(2)
           unit['er'] = er.toFixed(2)
+          if (item.indexOf('s') !== -1) {
+            data = PaintRange(unit.EviItem, ownV[0], unit.sr, data)
+          }
           return
         }
       })
+
     })
   } else if (flag === 1) { //与逻辑提升规则
     x = Math.pow(newV, 1/len)
@@ -110,6 +116,9 @@ const PaintRange = function (str, oldV, newV, data) {
           er = er > 1 ? 1 : er
           unit['sr'] = sr.toFixed(2)
           unit['er'] = er.toFixed(2)
+          if (item.indexOf('s') !== -1) {
+            data = PaintRange(unit.EviItem, ownV[0], unit.sr, data)
+          }
           return
         }
       })

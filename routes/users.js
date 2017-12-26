@@ -276,7 +276,7 @@ router.get('/cost/analyse',function (req,res) {
         return;
       }
       let rt2 = result2 //子目标
-      let rt3 = Mode.PaintRange(mode, rt1, threshold, rt2) //提升范围划定结果（未递归）
+      let rt3 = Mode.PaintRange(mode, rt1, threshold, rt2) //提升范围划定结果
     })
   })
 })
