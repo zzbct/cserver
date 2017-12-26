@@ -3,6 +3,8 @@ var http = require('http')
 var DB = require('../db');
 var Evi = require('../public/javascripts/Evi')
 var Mode = require('../public/javascripts/Mode')
+var allEvi = require('../public/javascripts/Common')
+
 var router = express.Router();
 
 var db = DB.comDB
@@ -165,6 +167,7 @@ router.get('/argu/evis',function (req,res) {
     },
   }
   var factor = [['工具收集', '人力收集'], ['精通', '熟练', '较熟练', '基本了解', '其它'], ['强', '较强', '一般', '弱', '较弱']]
+
   var request = http.request(opt, function(resq) {
     let datas = ''
     resq.on('data',function(data){
@@ -197,6 +200,57 @@ router.get('/argu/evis',function (req,res) {
     console.log("Got error: " + e.message)
   })
   request.end()
+})
+
+
+/*获取证据收集分析--静态信息*/
+router.get('/cost/static',function (req,res) {
+  var cId = req.query.cId
+  var id = req.query.id
+  var auth = req.query.auth
+  var sql = `SELECT * FROM reviewitem WHERE ID=${cId}`
+  db.query(sql,function (err, result) {
+    if (err) {
+      console.log('[SELECT ERROR] - ', err.message);
+      return;
+    }
+    let item = result[0]
+    var url = `http://192.168.109.111:8080/yw/review/getItemForm?RefRItem=${cId}`
+    var opt = {
+      host:'192.168.109.111',
+      port:'8080',
+      path: url,
+      method:'GET',
+      headers: {
+        'Content-Type': 'application/json;charset=UTF-8',
+        'ID': id,
+        'Auth': auth
+      },
+    }
+    var factor = [['工具收集', '人力收集'], ['精通', '熟练', '较熟练', '基本了解', '其它'], ['强', '较强', '一般', '弱', '较弱']]
+
+    var request = http.request(opt, function(resq) {
+      let datas = ''
+      resq.on('data',function(data){
+        datas += data
+      })
+      resq.on('end',function(){
+        datas = JSON.parse(datas)
+        let evis = datas.ItemForm[0].eviForm
+        let obj = {
+          ID: item.ID,
+          CheckItem: item.CheckItem,
+          threshold: item.threshold? item.threshold : '未设定',
+          result: item.result? item.result : '未论证',
+          total: evis.length
+        }
+        res.send(obj)
+      })
+    }).on('error', function(e) {
+      console.log("Got error: " + e.message)
+    })
+    request.end()
+  })
 })
 
 /*执行论证
