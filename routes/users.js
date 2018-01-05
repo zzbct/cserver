@@ -3,7 +3,7 @@ var http = require('http')
 var DB = require('../db');
 var Evi = require('../public/javascripts/Evi')
 var Mode = require('../public/javascripts/Mode')
-var allEvi = require('../public/javascripts/Common')
+var Cost = require('../public/javascripts/Cost')
 
 var router = express.Router();
 
@@ -260,6 +260,8 @@ router.get('/cost/analyse',function (req,res) {
   var auth = req.query.auth
   /*划定提升范围*/
   var sql1 = `SELECT * FROM reviewitem WHERE ID=${cId}`
+  var sql2 = `SELECT ID,EviItem,dict,confidence FROM eviitem where RefRItem=${cId}`
+  var sql3 = 'SELECT Evidence FROM eviitem where ID='
   db.query(sql1, function (err, result1) {  //1获得论证模式、阈值、论证结果
     if (err) {
       console.log('[SELECT ERROR] - ', err.message);
@@ -269,15 +271,76 @@ router.get('/cost/analyse',function (req,res) {
     let threshold = item.threshold
     let mode = item.ModeAfter
     let rt1 = item.result
-    var sql2 = `SELECT EviItem,dict,confidence FROM eviitem where RefRItem=${cId}`
     db.query(sql2, function (err, result2) {  //2获得子目标
       if (err) {
         console.log('[SELECT ERROR] - ', err.message);
         return;
       }
       let rt2 = result2 //子目标
+
       let rt3 = Mode.PaintRange(mode, rt1, threshold, rt2) //提升范围划定结果
-      console.log(rt3)
+      var url = `http://192.168.109.111:8080/yw/review/getItemForm?RefRItem=${cId}`
+      var opt = {
+        host:'192.168.109.111',
+        port:'8080',
+        path: url,
+        method:'GET',
+        headers: {
+          'Content-Type': 'application/json;charset=UTF-8',
+          'ID': id,
+          'Auth': auth
+        },
+      }
+      var request = http.request(opt, function(resq) {
+        let datas = ''
+        resq.on('data',function(data){
+          datas += data
+        })
+        resq.on('end',function(){
+          datas = JSON.parse(datas)
+          let rt4 = datas.ItemForm[0].eviForm //父目标的所有证据
+          rt4.map( (evi) => {
+            let evilist = evi.evilist[0]
+            let source = evilist.eviSource.charCodeAt() - 97
+            let familiarity = evilist.eviFamiliarity.charCodeAt() - 97
+            let suppAccess = evilist.eviSuppAccess.charCodeAt() - 97
+            evilist['costFunc'] = Evi.CostFunc(source,familiarity,suppAccess)
+            evi['confidence'] = Evi.Confidence(source, familiarity, suppAccess).map(Number)
+            return true
+          })
+          let rt5 = [] // 各子目标每提升0.01对应的最小证据收集成本矩阵
+          rt3.forEach((item1) => {
+            let eviSet = []
+            rt4.forEach((item2) => {
+              if (item1.EviItem === item2.eviItem) {
+                let callback = function (k,r) {
+                  let evilist = item2.evilist[0]
+                  let source = evilist.eviSource.charCodeAt() - 97
+                  let familiarity = evilist.eviFamiliarity.charCodeAt() - 97
+                  let suppAccess = evilist.eviSuppAccess.charCodeAt() - 97
+                  return Evi.CostFunc(source,familiarity,suppAccess,k,r)
+                }
+                eviSet.push({
+                  confidence: item2.confidence,
+                  initial: item2.confidence[0],
+                  cost: callback
+                })
+              }
+            })
+            if (item1.dict.indexOf('s') === -1) {
+              rt5.push({eviItem: item1.EviItem,advice:Cost.MatrixSingle(item1.sr, item1.er, eviSet)})
+              //
+            }
+          })
+          let rt6 //求顶级目标的最小证据收集成本方案
+        })
+      }).on('error', function(e) {
+        console.log("Got error: " + e.message)
+      })
+      request.end()
+
+      //let rt4 = Cost.MatrixSingle(0.64, 0.65, eviSet)
+      //console.log(rt4[0])
     })
   })
 })
@@ -288,6 +351,7 @@ router.post('/argu/results',function (req,res) {
   var mode = req.body.mode
   var id = req.body.refItem
   var cInfo = req.body.confidenceInfo
+  console.log(cInfo)
   var argu = [] //聚拢支持同一目标的证据信息
   var dict = [] //辅助空间
   /*聚拢支持同一目标的证据信息*/

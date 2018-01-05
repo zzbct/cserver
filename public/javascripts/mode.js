@@ -86,8 +86,8 @@ const PaintRange = function (str, oldV, newV, data) {
           er = 1 - (1 - newV)*(1-ownV[0]) / multi
           er = er > newV ? newV : er //b
           sr = sr > er ? er : sr
-          unit['sr'] = sr.toFixed(2)
-          unit['er'] = er.toFixed(2)
+          unit['sr'] = +sr.toFixed(2)
+          unit['er'] = +er.toFixed(2)
           if (item.indexOf('s') !== -1) {
             data = PaintRange(unit.EviItem, ownV[0], unit.sr, data)
           }
@@ -114,8 +114,8 @@ const PaintRange = function (str, oldV, newV, data) {
           sr = sr > 1 ? 1 : sr
           er = newV * ownV[0] / multi
           er = er > 1 ? 1 : er
-          unit['sr'] = sr.toFixed(2)
-          unit['er'] = er.toFixed(2)
+          unit['sr'] = +sr.toFixed(2)
+          unit['er'] = +er.toFixed(2)
           if (item.indexOf('s') !== -1) {
             data = PaintRange(unit.EviItem, ownV[0], unit.sr, data)
           }

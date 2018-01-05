@@ -9,7 +9,7 @@ const Confidence = function (source, familiarity, suppAccess) {
   var b = 1 - familiarity * 0.2
   var c = 1 - suppAccess * 0.2
   var pass = a * b * c
-  var uncertain = a * Math.pow(b, 3) * Math.sqrt(c)
+  var uncertain = (1-pass)* a * Math.pow(b, 3) * Math.sqrt(c)
   pass = pass.toFixed(2)
   uncertain = pass== 1? 0 : uncertain.toFixed(2)
   var fail = (1 - pass - uncertain).toFixed(2)
@@ -20,16 +20,12 @@ const Confidence = function (source, familiarity, suppAccess) {
 * 公式 工具收集： cost = 3(1-uncertain)*pass
 *      人力收集： cost = e(1-uncertain)^pass
 * */
-const Cost = function (source, confidence) {
-  var cost = 0
-  var [pass, uncertain, fail] = confidence
-  if (source === 'a') {
-    cost = 3 * (1 - uncertain) * pass
+const CostFunc = function (sour, fa, supp, k , r) {
+  if (sour === 0) {
+    return 3 * (k-r)
   } else {
-    cost = Math.exp(100*pass) - 1
+    return Math.exp(12 * (k - r))
   }
-  cost = cost.toFixed(2)
-  return cost
 }
 
 /*D-S目标符合性论证*/
@@ -101,4 +97,4 @@ const Bayes = function (cSet, logic) {
   return xArr.map(Number)
 }
 
-module.exports = {Confidence, Cost, DempsterShafer, Bayes}
+module.exports = {Confidence, CostFunc, DempsterShafer, Bayes}
