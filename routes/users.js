@@ -4,6 +4,7 @@ var DB = require('../db');
 var Evi = require('../public/javascripts/Evi')
 var Mode = require('../public/javascripts/Mode')
 var Cost = require('../public/javascripts/Cost')
+var Common = require('../public/javascripts/Common')
 
 var router = express.Router();
 
@@ -308,7 +309,11 @@ router.get('/cost/analyse',function (req,res) {
             evi['confidence'] = Evi.Confidence(source, familiarity, suppAccess).map(Number)
             return true
           })
-          let rt5 = [] // 各子目标每提升0.01对应的最小证据收集成本矩阵
+          let rt5 = [] // 各子目标（直接受证据论证）每提升0.01对应的最小证据收集成本矩阵
+          console.log('rt3')
+          console.log(rt3)
+          console.log('rt4')
+          console.log(rt4)
           rt3.forEach((item1) => {
             let eviSet = []
             rt4.forEach((item2) => {
@@ -328,19 +333,23 @@ router.get('/cost/analyse',function (req,res) {
               }
             })
             if (item1.dict.indexOf('s') === -1) {
-              rt5.push({eviItem: item1.EviItem,advice:Cost.MatrixSingle(item1.sr, item1.er, eviSet)})
-              //
+              rt5.push({eviItem: item1.EviItem, advice: Cost.MatrixSingle(item1.sr, item1.er, eviSet)})
             }
           })
-          let rt6 //求顶级目标的最小证据收集成本方案
+          console.log('rt5')
+          console.log(rt5)
+          let rt6 = [] //求子目标（直接受目标论证）的最小证据收集成本方案
+          rt3.forEach((item1) => {
+            let unit = item1.dict
+            cbCost(rt6, rt3, item1)
+          })
+          console.log('rt6')
+          console.log(rt6)
         })
       }).on('error', function(e) {
         console.log("Got error: " + e.message)
       })
       request.end()
-
-      //let rt4 = Cost.MatrixSingle(0.64, 0.65, eviSet)
-      //console.log(rt4[0])
     })
   })
 })
@@ -409,4 +418,26 @@ router.post('/threshold',function (req,res) {
   })
 })
 
+
+/*方法*/
+
+//递归计算层级论证目标 s1 = s0 | 3 ,s0 = 1 & 3
+const cbCost = function (arr1, arr2, item, key = 'eviItem') {
+  let unit = item.dict
+  if (unit.indexOf('s') !== -1 && Common.AliveInObj(arr1, key, unit) === -1) {
+    let evis = []
+    let f = item.EviItem.indexOf('|')
+    let tmp
+    evis = f === -1 ? item.split('&') : item.EviItem.split('|')
+    evis.forEach((item2) => {
+      if (item2.indexOf('s') !== -1 && Common.AliveInObj(arr1, key, item2) === -1) {
+        //push new data in rt6
+        let i = Common.AliveInObj(arr2, 'dict', item2)
+        cbCOst(arr1, arr2, arr2[i], key)
+      }
+    })
+    tmp = 11
+    arr1.push({eviItem: unit, advice: tmp})
+  }
+}
 module.exports = router;
