@@ -76,7 +76,7 @@ const Bayes = function (cSet, logic) {
     return cSet[0];
   }
   var xArr = [1,1,1];
-  if(logic === 1) {
+  if(logic === 1) { //与
     for(var i = 0; i < paramsLen; i++) {
       xArr[0] *= cSet[i][0];
       xArr[2] *= 1-cSet[i][1];

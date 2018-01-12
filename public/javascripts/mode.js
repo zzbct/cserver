@@ -60,7 +60,7 @@ const HandleMode = function (str, data, id) {
 }
 
 /*划定提升范围*/
-const PaintRange = function (str, oldV, newV, data) {
+const PaintRange = function (str, oldV, newV, data, top = newV) {
   let [same, flag] = SplitMode(str)
   let len = same.length
   let x
@@ -69,7 +69,6 @@ const PaintRange = function (str, oldV, newV, data) {
   let er
   let ownV
   if (flag === -1) { //或逻辑提升规则
-
     x = 1 - Math.pow(1 - newV, 1/len)
     same.forEach((item) => {
       let arr  = data.filter((unit )=> {
@@ -83,13 +82,12 @@ const PaintRange = function (str, oldV, newV, data) {
         if (unit.dict == item) {
           ownV = unit.confidence.split(',').map(Number)
           sr = ownV[0] < x ? x : ownV[0] + 0.01 //a
-          er = 1 - (1 - newV)*(1-ownV[0]) / multi
-          er = er > newV ? newV : er //b
+          er = 1 - (1 - top)*(1-ownV[0]) / multi
           sr = sr > er ? er : sr
           unit['sr'] = +sr.toFixed(2)
           unit['er'] = +er.toFixed(2)
           if (item.indexOf('s') !== -1) {
-            data = PaintRange(unit.EviItem, ownV[0], unit.sr, data)
+            data = PaintRange(unit.EviItem, ownV[0], unit.sr, data, unit.er )
           }
           return
         }
@@ -112,12 +110,12 @@ const PaintRange = function (str, oldV, newV, data) {
           ownV = unit.confidence.split(',').map(Number)
           sr = ownV[0] < newV ? newV : ownV[0] + 0.01
           sr = sr > 1 ? 1 : sr
-          er = newV * ownV[0] / multi
+          er = top * ownV[0] / multi
           er = er > 1 ? 1 : er
           unit['sr'] = +sr.toFixed(2)
           unit['er'] = +er.toFixed(2)
           if (item.indexOf('s') !== -1) {
-            data = PaintRange(unit.EviItem, ownV[0], unit.sr, data)
+            data = PaintRange(unit.EviItem, ownV[0], unit.sr, data, unit.er)
           }
           return
         }
