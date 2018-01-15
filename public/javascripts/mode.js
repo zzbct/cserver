@@ -81,7 +81,8 @@ const PaintRange = function (str, oldV, newV, data, top = newV) {
       data.forEach((unit) => {
         if (unit.dict == item) {
           ownV = unit.confidence.split(',').map(Number)
-          sr = ownV[0] < x ? x : ownV[0] + 0.01 //a
+          //sr = ownV[0] < x ? x : ownV[0] + 0.01 //a
+          sr  = ownV[0]
           er = 1 - (1 - top)*(1-ownV[0]) / multi
           sr = sr > er ? er : sr
           unit['sr'] = +sr.toFixed(2)
@@ -108,7 +109,7 @@ const PaintRange = function (str, oldV, newV, data, top = newV) {
       data.forEach((unit) => {
         if (unit.dict == item) {
           ownV = unit.confidence.split(',').map(Number)
-          sr = ownV[0] < newV ? newV : ownV[0] + 0.01
+          sr = ownV[0] < newV ? newV : ownV[0]
           sr = sr > 1 ? 1 : sr
           er = top * ownV[0] / multi
           er = er > 1 ? 1 : er

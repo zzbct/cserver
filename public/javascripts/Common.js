@@ -33,6 +33,27 @@ const deepCopy = function (obj){
   }
   return result;
 }
+
+//嵌套对象的深度挖掘
+
+const deepDig = function (obj, d1, d2,  res) {
+  console.log(obj)
+  let unit
+  if (obj.hasOwnProperty(d1)) {
+    unit = obj[d1]
+    unit.forEach((item) => {
+      if (item.hasOwnProperty(d2)) {
+        deepDig(item[d2], d1, d2 , res)
+      } else {
+        res.push(item)
+      }
+    })
+  } else {
+    return []
+  }
+}
+
+
 //返回传递给他的任意对象的类
 function isClass(o){
   if(o===null) return "Null";
@@ -40,4 +61,4 @@ function isClass(o){
   return Object.prototype.toString.call(o).slice(8,-1);
 }
 
-module.exports = {AliveInObj, deepCopy}
+module.exports = {AliveInObj, deepCopy, deepDig}

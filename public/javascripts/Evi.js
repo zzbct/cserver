@@ -21,10 +21,13 @@ const Confidence = function (source, familiarity, suppAccess) {
 *      人力收集： cost = e(1-uncertain)^pass
 * */
 const CostFunc = function (sour, fa, supp, k , r) {
+  if (k == r) {
+    return 0
+  }
   if (sour === 0) {
-    return 3 * (k-r)
+    return Number((3 * (k-r)).toFixed(2))
   } else {
-    return Math.exp(12 * (k - r))
+    return Number(Math.exp(12 * (k - r)).toFixed(2))
   }
 }
 

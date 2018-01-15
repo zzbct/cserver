@@ -10,10 +10,18 @@ var cost = Number.MAX_VALUE
 const MatrixBaseEvi = function (start, end, eviSet) {
   var t = 0
   var matrix = []
+  var result = []
   for (let i = 0; i <= (end - start)*100; i++ ) {
     matrix.push([])
   }
-  var result = []
+  let test = []
+  eviSet.forEach((item, idx) => {
+    test.push(item.confidence)
+  })
+  if (Evi.DempsterShafer(test)[0] >= start) {
+    result[t] = {hv: +((t*0.01+start).toFixed(2)), cost: 0, num:0, evi: []}
+    t++
+  }
   var temp = []
   var n = eviSet.length
   while ( t * 0.01 <= end - start) { //每提升 0.01的最小成本
@@ -62,7 +70,7 @@ var PcostEvi = function (k, i, count, eviStatic) { //min(p(k, i))
       let res = Evi.DempsterShafer(con)[0]
       if (res >= k) {
         let min = eviSet.reduce((pre, cur) => {
-          return pre + cur.cost(cur.confidence[0],cur.initial)
+          return pre + cur.cost(cur.confidence[0], cur.initial[0])
         }, 0)
         min = Number(min.toFixed(2))
         if (min < cost) {
@@ -70,8 +78,15 @@ var PcostEvi = function (k, i, count, eviStatic) { //min(p(k, i))
           xarr = []
           eviSet.forEach((item,idx) => {
             if (idx <= i) {
-              if (item.confidence[0] > item.initial) {
-                xarr.push({pos: idx, conf: item.confidence[0], initial: item.initial})
+              if (item.confidence[0] > item.initial[0]) {
+                xarr.push({
+                    pos: idx,
+                    name: item.name,
+                    info: item.evilist,
+                    conf: item.confidence,
+                    initial: item.initial,
+                    cost: item.cost(item.confidence[0],item.initial[0])
+                })
               }
             }
           })
@@ -95,13 +110,15 @@ var IncData = function (n1, n2, n3) {
 const MatrixBaseGoal = function (start, end, eviSet, flag) {
   var t = 0
   var matrix = []
-  for (let i = 0; i <= (end - start)*100; i++ ) {
+  var len = Number((end - start).toFixed(2))
+  for (let i = 0; i <= len*100; i++ ) {
     matrix.push([])
   }
   var result = []
   var temp = []
   var n = eviSet.length
-  while ( t * 0.01 <= end - start) { //每提升 0.01的最小成本
+
+  while ( t  <= len * 100) { //每提升 0.01的最小成本
     //每种证据组合下的成本，求最小值 E(k, i) = min (E(k, i-1), min(p(k, i)))
     //E(k, i) 由前i个可选证据下提升目标符合性到k的最小成本
     //p(k, i) 必须提升第i个证据时，前i个证据下提升目标符合性到k的最小成本
@@ -116,7 +133,7 @@ const MatrixBaseGoal = function (start, end, eviSet, flag) {
       matrix[t][i] = Math.min(matrix[t][i-1],cost)
       i++
     }
-    result[t] = {hv: +((t*0.01+start).toFixed(2)), cost: matrix[t][n-1], num: temp.length, evi: temp}
+    result[t] = {hv: +((t*0.01+start).toFixed(2)), cost:matrix[t][n-1], num: temp.length, evi: temp}
     t++
   }
   return result
@@ -153,7 +170,7 @@ var PcostGoal = function (k, i, count, eviStatic, flag) { //min(p(k, i))
       if (res >= k) {
         let min = eviSet.reduce((pre, cur) => {
           let grip = Number(((cur.confidence[0] - cur.initial) * 100).toFixed(2))
-          return cur.cost.length > grip ? pre +  cur.cost[grip].cost : Number.MAX_VALUE
+          return cur.cost.length > grip ? pre + cur.cost[grip].cost : Number.MAX_VALUE
         }, 0)
         min = Number(min.toFixed(2))
         if (min < cost) {
@@ -161,8 +178,15 @@ var PcostGoal = function (k, i, count, eviStatic, flag) { //min(p(k, i))
           xarr = []
           eviSet.forEach((item,idx) => {
             if (idx <= i) {
-              if (item.confidence[0] > item.initial) {
-                xarr.push({pos: idx, name: item.name, conf: item.confidence[0], initial: item.initial})
+              if (item.confidence[0] > item.virtual) {
+                let grip = Number(((item.confidence[0] - item.initial) * 100).toFixed(2))
+                xarr.push({
+                    name: item.name,
+                    conf: item.confidence[0],
+                    initial: item.initial,
+                    virtual: item.virtual,
+                    advice: item.cost[grip]
+                })
               }
             }
           })

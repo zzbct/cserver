@@ -304,7 +304,6 @@ router.get('/cost/analyse',function (req,res) {
             let source = evilist.eviSource.charCodeAt() - 97
             let familiarity = evilist.eviFamiliarity.charCodeAt() - 97
             let suppAccess = evilist.eviSuppAccess.charCodeAt() - 97
-            evilist['costFunc'] = Evi.CostFunc(source,familiarity,suppAccess)
             evi['confidence'] = Evi.Confidence(source, familiarity, suppAccess).map(Number)
             return true
           })
@@ -313,16 +312,18 @@ router.get('/cost/analyse',function (req,res) {
             let eviSet = []
             rt4.forEach((item2) => {
               if (item1.EviItem === item2.eviItem) {
+                let evilist = item2.evilist[0]
+                let source = evilist.eviSource.charCodeAt() - 97
+                let familiarity = evilist.eviFamiliarity.charCodeAt() - 97
+                let suppAccess = evilist.eviSuppAccess.charCodeAt() - 97
                 let callback = function (k,r) {
-                  let evilist = item2.evilist[0]
-                  let source = evilist.eviSource.charCodeAt() - 97
-                  let familiarity = evilist.eviFamiliarity.charCodeAt() - 97
-                  let suppAccess = evilist.eviSuppAccess.charCodeAt() - 97
                   return Evi.CostFunc(source,familiarity,suppAccess,k,r)
                 }
                 eviSet.push({
+                  name: item2.eviItem,
+                  evilist,
                   confidence: item2.confidence,
-                  initial: item2.confidence[0],
+                  initial: item2.confidence,
                   cost: callback
                 })
               }
@@ -338,10 +339,31 @@ router.get('/cost/analyse',function (req,res) {
             let unit = item1.dict
             cbCost(rt5, rt3, item1)
           })
-          console.log('rt5')
-          rt5[0].advice.forEach((item) => {
-            console.log(item)
+          console.log(rt3[1])
+          console.log(rt3[2])
+          console.log(rt5[0].advice[4].evi[0])
+          /*求顶级目标最小成本*/
+          let es = []
+          let tag = mode.indexOf('|')=== -1 ? 1 : -1
+          let pools = tag === -1 ? mode.split('|') : mode.split('&')
+          pools.forEach((pool) => {
+            let i = Common.AliveInObj(rt5, 'eviItem', pool)
+            let j =Common.AliveInObj(rt3, 'dict', pool)
+            let pl = i === -1 ? rt3[j] : rt5[i]
+            let confidence = formalConf(pl)
+            let obj = {
+              name: pool,
+              confidence: confidence,
+              virtual: pl.confidence.split(',').map(Number)[0],
+              initial: confidence[0],
+              cost: pl.advice
+            }
+            es.push(obj)
           })
+          let rt6 = Cost.MatrixBaseGoal(threshold, threshold, es, tag)[0]
+          let rt7 = []
+          Common.deepDig(rt6, 'evi', 'advice', rt7)
+          res.send({code: 200, cost: rt6.cost, dataTree: {first: rt6, matrixB: rt3, matrixS: rt5, res: rt7}})
         })
       }).on('error', function(e) {
         console.log("Got error: " + e.message)
@@ -430,10 +452,11 @@ const cbCost = function (arr1, arr2, item, key = 'eviItem') {
     evis.forEach((item2) => {
       let i = Common.AliveInObj(arr1, key, item2)
       let j = Common.AliveInObj(arr2, 'dict', item2)
-      let confidence = arr2[j].confidence.split(',').map(Number)
+      let confidence = formalConf(arr2[j])
       let obj = {
         name: arr2[j].dict,
         confidence: confidence,
+        virtual: +arr2[j].confidence.split(',')[0],
         initial: confidence[0]
       }
       if (item2.indexOf('s') !== -1 && i === -1) {
@@ -445,12 +468,21 @@ const cbCost = function (arr1, arr2, item, key = 'eviItem') {
       }
       eviSet.push(obj)
     })
-    console.log(eviSet)
     arr1.push({
       eviItem: unit,
+      confidence: formalConf(item).join(),
+      sr: item.sr,
+      er: item.er,
       advice: Cost.MatrixBaseGoal(item.sr, item.er, eviSet, flag)
     })
     return Cost.MatrixBaseGoal(item.sr, item.er, eviSet, flag)
   }
+}
+
+function  formalConf (x){
+  let  m = x.confidence.split(',').map(Number)
+  let g = Number(x.sr) - m[0]
+  let q = g < m[1] ? m[1] - g : 0
+  return [Number(x.sr), Number(q.toFixed(2)), Number((1 - Number(x.sr) - q).toFixed(2)) ]
 }
 module.exports = router;
