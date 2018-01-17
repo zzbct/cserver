@@ -339,15 +339,12 @@ router.get('/cost/analyse',function (req,res) {
             let unit = item1.dict
             cbCost(rt5, rt3, item1)
           })
-          console.log(rt3[1])
-          console.log(rt3[2])
-          console.log(rt5[0].advice[4].evi[0])
           /*求顶级目标最小成本*/
           let es = []
           let tag = mode.indexOf('|')=== -1 ? 1 : -1
           let pools = tag === -1 ? mode.split('|') : mode.split('&')
           pools.forEach((pool) => {
-            let i = Common.AliveInObj(rt5, 'eviItem', pool)
+            let i = Common.AliveInObj(rt5, 'EviItem', pool)
             let j =Common.AliveInObj(rt3, 'dict', pool)
             let pl = i === -1 ? rt3[j] : rt5[i]
             let confidence = formalConf(pl)
@@ -363,6 +360,11 @@ router.get('/cost/analyse',function (req,res) {
           let rt6 = Cost.MatrixBaseGoal(threshold, threshold, es, tag)[0]
           let rt7 = []
           Common.deepDig(rt6, 'evi', 'advice', rt7)
+          rt3 = rt3.map((item) => {
+            if (item.dict.indexOf('s') === -1) {
+              return item
+            }
+          })
           res.send({code: 200, cost: rt6.cost, dataTree: {first: rt6, matrixB: rt3, matrixS: rt5, res: rt7}})
         })
       }).on('error', function(e) {
@@ -469,7 +471,7 @@ const cbCost = function (arr1, arr2, item, key = 'eviItem') {
       eviSet.push(obj)
     })
     arr1.push({
-      eviItem: unit,
+      EviItem: unit,
       confidence: formalConf(item).join(),
       sr: item.sr,
       er: item.er,
