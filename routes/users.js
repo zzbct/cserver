@@ -14,7 +14,7 @@ var argu = DB.argDB
 db.connect();
 var  sql = 'SELECT * FROM user'; //获取用户信息
 var goalsSql = '';
-
+const base = '192.168.109.111';
 /* GET users listing. */
 router.get('/', function(req, res, next) {
   db.query(sql,function (err, result) {
@@ -155,9 +155,9 @@ router.get('/argu/evis',function (req,res) {
   var cId = req.query.cId
   var id = req.query.id
   var auth = req.query.auth
-  var url = `http://192.168.109.111:8080/yw/review/getItemForm?RefRItem=${cId}`
+  var url = `http://${base}:8080/yw/review/getItemForm?RefRItem=${cId}`
   var opt = {
-    host:'192.168.109.111',
+    host:base,
     port:'8080',
     path: url,
     method:'GET',
@@ -176,26 +176,31 @@ router.get('/argu/evis',function (req,res) {
     })
     resq.on('end',function(){
       datas = JSON.parse(datas)
-      let evis = datas.ItemForm[0].eviForm
-      //根据因素获得证据置信度
-      //将因素转为中文描述
-      evis.map( (evi) => {
-        let evilist = evi.evilist[0]
-        let source = evilist.eviSource.charCodeAt() - 97
-        let familiarity = evilist.eviFamiliarity.charCodeAt() - 97
-        let suppAccess = evilist.eviSuppAccess.charCodeAt() - 97
-        let [pass, uncertain, fail] = Evi.Confidence(source, familiarity, suppAccess)
-        evilist['pass'] = pass
-        evilist['uncertain'] = uncertain
-        evilist['fail'] = fail
-        evilist.eviSource = factor[0][source]
-        evilist.eviFamiliarity = factor[1][familiarity]
-        evilist.eviSuppAccess = factor[2][suppAccess]
-        evi.evilist = evilist
-        return true
-      })
-      datas.ItemForm = datas.ItemForm[0]
-      res.send(datas)
+      if (!datas.ItemForm || !datas.ItemForm.length) {
+        res.send({code: 200, ItemForm: {}})
+      } else {
+          let evis = datas.ItemForm[0].eviForm
+          //根据因素获得证据置信度
+          //将因素转为中文描述
+          evis.map( (evi) => {
+            let evilist = evi.evilist[0]
+            let source = evilist.eviSource.charCodeAt() - 97
+            let familiarity = evilist.eviFamiliarity.charCodeAt() - 97
+            let suppAccess = evilist.eviSuppAccess.charCodeAt() - 97
+            let [pass, uncertain, fail] = Evi.Confidence(source, familiarity, suppAccess)
+            evilist['pass'] = pass
+            evilist['uncertain'] = uncertain
+            evilist['fail'] = fail
+            evilist.eviSource = factor[0][source]
+            evilist.eviFamiliarity = factor[1][familiarity]
+            evilist.eviSuppAccess = factor[2][suppAccess]
+            evi.evilist = evilist
+            return true
+          })
+          datas.ItemForm = datas.ItemForm[0]
+          res.send(datas)
+      }
+
     })
   }).on('error', function(e) {
     console.log("Got error: " + e.message)
@@ -216,9 +221,9 @@ router.get('/cost/static',function (req,res) {
       return;
     }
     let item = result[0]
-    var url = `http://192.168.109.111:8080/yw/review/getItemForm?RefRItem=${cId}`
+    var url = `http://${base}:8080/yw/review/getItemForm?RefRItem=${cId}`
     var opt = {
-      host:'192.168.109.111',
+      host:base,
       port:'8080',
       path: url,
       method:'GET',
@@ -279,9 +284,9 @@ router.get('/cost/analyse',function (req,res) {
       }
       let rt2 = result2 //子目标
       let rt3 = Mode.PaintRange(mode, rt1, threshold, rt2) //提升范围划定结果
-      var url = `http://192.168.109.111:8080/yw/review/getItemForm?RefRItem=${cId}`
+      var url = `http://${base}:8080/yw/review/getItemForm?RefRItem=${cId}`
       var opt = {
-        host:'192.168.109.111',
+        host:base,
         port:'8080',
         path: url,
         method:'GET',
@@ -381,7 +386,6 @@ router.post('/argu/results',function (req,res) {
   var mode = req.body.mode
   var id = req.body.refItem
   var cInfo = req.body.confidenceInfo
-  console.log(cInfo)
   var argu = [] //聚拢支持同一目标的证据信息
   var dict = [] //辅助空间
   /*聚拢支持同一目标的证据信息*/
@@ -402,7 +406,7 @@ router.post('/argu/results',function (req,res) {
   var sql
   argu.forEach((item) => {
     let result = Evi.DempsterShafer(item.evidence)
-    item.confidence = result
+    item['confidence'] = result
     result = result.join()
     sql = `UPDATE eviitem SET Confidence='${result}' WHERE RefRItem = ${id} AND Dict = ${item.dict}`
     db.query(sql,function (err, result) {
@@ -419,8 +423,12 @@ router.post('/argu/results',function (req,res) {
     })
   })
   /*解析论证模式*/
-   Mode.HandleMode(mode, argu, id)
+   let d = Mode.HandleMode(mode, argu, id)
   /*Bayes目标符合性论证*/
+   res.send({
+     code: 200,
+     result: d
+   })
 })
 
 /*设定阈值*/

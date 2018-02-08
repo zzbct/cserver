@@ -1,5 +1,7 @@
 var Evi = require('./Evi')
 var DB = require('../../db')
+var Common = require('./Common')
+
 var db = DB.comDB
 
 /*解析论证模式*/
@@ -8,10 +10,6 @@ const HandleMode = function (str, data, id) {
   var b = str.indexOf(')')
   var idx = 0
   var res
-  var f0
-  var f1
-  var phase
-  var same
   while (a !== -1) {
     let  tmp = `s${idx}`
     let phase = str.slice(a+1, b)
@@ -48,7 +46,6 @@ const HandleMode = function (str, data, id) {
     })
   }
   res = single(str,data)
-
   //将顶级目标论证结果及解析后的论证模式写入reviewItem
   let sql2 = `UPDATE reviewitem SET result=${res[0]},ModeAfter='${str}' WHERE ID = ${id}`
   db.query(sql2,function (err, result) {
@@ -57,6 +54,7 @@ const HandleMode = function (str, data, id) {
       return;
     }
   })
+  return res[0]
 }
 
 /*划定提升范围*/
@@ -149,10 +147,12 @@ var single = function (str, data) {
   let [same, flag] = SplitMode(str)
 
   same.forEach((item) => {
-    let arr  = data.filter((unit )=> {
-      return unit.dict == item
-    })
-    cSet.push(arr[0].confidence)
+    let pos = Common.AliveInObj(data, 'dict', item)
+    if( pos === -1 ) {
+      cSet.push([0,1,0])
+    } else {
+      cSet.push(data[pos].confidence)
+    }
   })
   if (flag) {
     res = Evi.Bayes( cSet, flag)
