@@ -74,20 +74,20 @@ router.get('/goals',function (req,res) {
     var set = [];
     result.forEach((item) => {
       var t;
-      if(!item.threshold) {
+      if(!item.threshold && item.threshold !== 0) {
         t = '无';
-      } else if(!item.result) {
+      } else if(!item.result && item.result !== 0) {
         t = '无';
       } else{
-        t = item.result >= item.threshold ? `达到要求(${item.threshold})` : `未达到要求(${item.threshold})`
+        t = item.result >= item.threshold ? `达到要求(>=${item.threshold})` : `未达到要求(<${item.threshold})`
       }
       var obj = {
         ID: item.ID,
         CheckItem: item.CheckItem,
         Stage: item.Stage,
         Customize: item.Customize === 1 ? '自定义' : '标准',
-        threshold: item.threshold? item.threshold : '未设定',
-        state: item.result? item.result : '未论证',
+        threshold: (item.threshold || item.threshold === 0) ? item.threshold : '未设定',
+        state: (item.result || item.result === 0) ? item.result : '未论证',
         result: t,
         writable: false
       }
@@ -142,9 +142,9 @@ router.get('/argu/goal',function (req,res) {
     var obj = {
       ID: item.ID,
       CheckItem: item.CheckItem,
-      threshold: item.threshold? item.threshold : '未设定',
+      threshold: (item.threshold || item.threshold === 0) ? item.threshold : '未设定',
       mode: item.Mode,
-      result: item.result? item.result : '未论证'
+      result: (item.result || item.result === 0) ? item.result : '未论证'
     }
     res.send(obj)
   })
