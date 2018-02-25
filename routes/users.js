@@ -167,7 +167,7 @@ router.get('/argu/evis',function (req,res) {
       'Auth': auth
     },
   }
-  var factor = [['工具收集', '人力收集'], ['精通', '熟练', '较熟练', '基本了解', '其它'], ['强', '较强', '一般', '弱', '较弱']]
+  var factor = [['工具收集', '人力收集'], ['精通', '熟练', '较熟练', '基本了解', '其它'], ['强', '较强', '一般', '较弱', '弱']]
 
   var request = http.request(opt, function(resq) {
     let datas = ''
@@ -318,6 +318,7 @@ router.get('/cost/analyse',function (req,res) {
             rt4.forEach((item2) => {
               if (item1.EviItem === item2.eviItem) {
                 let evilist = item2.evilist[0]
+                let con = item2.confidence
                 let source = evilist.eviSource.charCodeAt() - 97
                 let familiarity = evilist.eviFamiliarity.charCodeAt() - 97
                 let suppAccess = evilist.eviSuppAccess.charCodeAt() - 97
@@ -362,6 +363,7 @@ router.get('/cost/analyse',function (req,res) {
             }
             es.push(obj)
           })
+
           let rt6 = Cost.MatrixBaseGoal(threshold, threshold, es, tag)[0]
           let rt7 = []
           Common.deepDig(rt6, 'evi', 'advice', rt7)
@@ -478,14 +480,15 @@ const cbCost = function (arr1, arr2, item, key = 'eviItem') {
       }
       eviSet.push(obj)
     })
+    let advice = Cost.MatrixBaseGoal(item.sr, item.er, eviSet, flag)
     arr1.push({
       EviItem: unit,
       confidence: formalConf(item).join(),
       sr: item.sr,
       er: item.er,
-      advice: Cost.MatrixBaseGoal(item.sr, item.er, eviSet, flag)
+      advice
     })
-    return Cost.MatrixBaseGoal(item.sr, item.er, eviSet, flag)
+    return advice
   }
 }
 

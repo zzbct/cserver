@@ -61,4 +61,10 @@ function isClass(o){
   return Object.prototype.toString.call(o).slice(8,-1);
 }
 
-module.exports = {AliveInObj, deepCopy, deepDig}
+
+//判断两个对象是否对等
+
+function deepCompare (obj1, obj2) {
+  return false
+}
+module.exports = {AliveInObj, deepCopy, deepDig, deepCompare}

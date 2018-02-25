@@ -117,7 +117,6 @@ const MatrixBaseGoal = function (start, end, eviSet, flag) {
   var result = []
   var temp = []
   var n = eviSet.length
-
   while ( t  <= len * 100) { //每提升 0.01的最小成本
     //每种证据组合下的成本，求最小值 E(k, i) = min (E(k, i-1), min(p(k, i)))
     //E(k, i) 由前i个可选证据下提升目标符合性到k的最小成本

@@ -24,8 +24,10 @@ const CostFunc = function (sour, fa, supp, k , r) {
   if (k == r) {
     return 0
   }
+  //let con = Confidence(sour, fa, supp).map(Number)
+  //let c = con[0] - con[2]
   if (sour === 0) {
-    return Number((3 * (k-r)).toFixed(2))
+    return Number((3 * (k - r)).toFixed(2))
   } else {
     return Number(Math.exp(12 * (k - r)).toFixed(2))
   }
@@ -88,8 +90,8 @@ const Bayes = function (cSet, logic) {
     xArr[1] = 1 - xArr[0] - xArr[2];
   } else if(logic === -1) {
     for(var i = 0; i < paramsLen; i++) {
-      xArr[0] *= 1-cSet[i][0];
-      xArr[1] *=cSet[i][1];
+      xArr[0] = xArr[0]*(1-cSet[i][0]);
+      xArr[1] *= cSet[i][1];
     }
     xArr[0] = 1 - xArr[0]
     xArr[2] = 1 - xArr[0] - xArr[1]
@@ -97,6 +99,7 @@ const Bayes = function (cSet, logic) {
     xArr[1].toFixed(2)
     xArr[2].toFixed(2)
   }
+  console.log(xArr)
   return xArr.map(Number)
 }
 
