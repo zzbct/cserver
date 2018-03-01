@@ -1,3 +1,5 @@
+var Common = require('./Common')
+
 /*从三个因素计算证据置信度
 * 公式 confidence = ab^3 c^(1/2)
 * arg0:证据来源[1,0.6]
@@ -99,8 +101,33 @@ const Bayes = function (cSet, logic) {
     xArr[1].toFixed(2)
     xArr[2].toFixed(2)
   }
-  console.log(xArr)
   return xArr.map(Number)
 }
 
-module.exports = {Confidence, CostFunc, DempsterShafer, Bayes}
+/*消除共享证据或信息的影响*/
+const brushShare = function (arrs) {
+  let r = null
+  let  a = null
+  let b = null
+  for (let i = 0; i < arrs.length - 1; i++) {
+    a = arrs[i]
+    for (let j = i+1; j < arrs.length; j++) {
+      b = arrs[j]
+      r = Common.deepDiff(a.info, b.info)
+      if (r) {
+        a.name = a.name + ',' + b.name
+        if (a.cost < b.cost) {
+          a.cost = b.cost
+          a.conf = b.conf
+        }
+        arrs.splice(j,1)
+      }
+    }
+  }
+  let cost = 0
+  arrs.forEach((item) => {
+    cost += item.cost
+})
+  return cost
+}
+module.exports = {Confidence, CostFunc, DempsterShafer, Bayes, brushShare}

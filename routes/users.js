@@ -25,7 +25,7 @@ router.get('/', function(req, res, next) {
     //把搜索值输出
     res.send(result);
   });
-});
+})
 
 router.get('/goals',function (req,res) {
   var phase = '';
@@ -119,38 +119,74 @@ router.get('/subgoals/parent',function (req,res) {
 
 /*获取单目标的子目标（cid）*/
 router.get('/argu/subs',function (req,res) {
-  var id = req.query.id;
-  var sql = `SELECT EviItem,dict,eviID FROM eviitem where RefRItem=${id}`
-  db.query(sql,function (err, result) {
+  var id = req.query.id
+  var sql1 = `SELECT ModeAfter,Mode FROM reviewitem WHERE ID=${id}`
+  var sql2 = `SELECT EviItem,dict,eviID FROM eviitem WHERE RefRItem=${id}`
+  var mode = null
+  var subs = null
+  var tree = null
+  db.query(sql1,function (err, result) {
     if (err) {
-      console.log('[SELECT ERROR] - ', err.message);
+      console.log('[SELECT ERROR11] - ', err.message);
       return;
     }
-    res.send(result)
+    let item = result[0]
+    if (item.ModeAfter === null) {
+      mode = Mode.TransMode(item.Mode, id)
+    } else {
+      mode = item.ModeAfter
+    }
   })
+  db.query(sql2, function (err, result) {
+    if (err) {
+      console.log('[SELECT ERROR] - ', err.message)
+      return;
+    }
+    subs = result
+    tree = Mode.BuildTree(mode, subs)
+    res.send(subs)
+  })
+
 })
+
 /*获取论证目标信息（cid）*/
 router.get('/argu/goal',function (req,res) {
   var id = req.query.id;
-  var sql = `SELECT * FROM reviewitem WHERE ID=${id}`
-  db.query(sql,function (err, result) {
+  var sql1 = `SELECT * FROM reviewitem WHERE ID=${id}`
+  var sql2 = `SELECT EviItem,dict,eviID FROM eviitem where RefRItem=${id}`
+  db.query(sql1,function (err, result) {
     if (err) {
-      console.log('[SELECT ERROR] - ', err.message);
+      console.log('[SELECT ERROR]', err.message);
       return;
     }
     var item = result[0]
-    var obj = {
-      ID: item.ID,
-      CheckItem: item.CheckItem,
-      threshold: (item.threshold || item.threshold === 0) ? item.threshold : '未设定',
-      mode: item.Mode,
-      result: (item.result || item.result === 0) ? item.result : '未论证'
-    }
-    res.send(obj)
+    db.query(sql2,function (err, result) {
+      if (err) {
+        console.log('[SELECT ERROR]', err.message)
+        return;
+      }
+      if (item.Mode === null) {
+        let m = ''
+        let len = result.length
+        for (let i = 1; i < len; i++) {
+          m += i + '&'
+        }
+        m += len
+        item.Mode = m
+      }
+      var obj = {
+        ID: item.ID,
+        CheckItem: item.CheckItem,
+        threshold: (item.threshold || item.threshold === 0) ? item.threshold : '未设定',
+        mode: item.Mode,
+        result: (item.result || item.result === 0) ? item.result : '未论证'
+      }
+      res.send(obj)
+    })
   })
 })
 
-/*获取论证目标信息（cid, id, auth）*/
+/*获取论证目标证据信息（cid, id, auth）*/
 router.get('/argu/evis',function (req,res) {
   var cId = req.query.cId
   var id = req.query.id
@@ -367,12 +403,13 @@ router.get('/cost/analyse',function (req,res) {
           let rt6 = Cost.MatrixBaseGoal(threshold, threshold, es, tag)[0]
           let rt7 = []
           Common.deepDig(rt6, 'evi', 'advice', rt7)
+          let cost = Evi.brushShare(rt7)
           rt3 = rt3.map((item) => {
             if (item.dict.indexOf('s') === -1) {
               return item
             }
           })
-          res.send({code: 200, cost: rt6.cost, dataTree: {first: rt6, matrixB: rt3, matrixS: rt5, res: rt7}})
+          res.send({code: 200, cost, dataTree: {first: rt6, matrixB: rt3, matrixS: rt5, res: rt7}})
         })
       }).on('error', function(e) {
         console.log("Got error: " + e.message)

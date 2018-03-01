@@ -5,6 +5,69 @@ var Common = require('./Common')
 var db = DB.comDB
 
 /*解析论证模式*/
+/*
+const HandleMode = function (str, data, id) {
+  let stack = [] //转换后模式
+  let phase = [] //基本模式
+  let tmp = [] //辅助空间
+  let arr = str.split('')
+  let fg = 0
+  let len = arr.length
+  let res = null
+  for (let i = 0; i < len; i++) {
+    let unit = arr[i]
+    if (unit !== ')') {
+      stack.push(unit)
+    } else {
+      tmp = []
+      let item = stack.pop()
+      while (item !== '(') {
+        tmp.push(item)
+        item = stack.pop()
+      }
+      tmp.reverse()
+      stack.push(`s${fg}`)
+      res = single(tmp.join(''),data)
+      //将S0-Sn论证结果res写入eviItem
+      res = res.map((item) => {return item.toFixed(2)})
+      data.push({dict: `s${fg}`, confidence: res})
+      let c = res.join()
+      let sql1 = ''
+      sql1 = `Update eviitem Set Confidence='${c}' where RefRItem = ${id} AND Dict='s${fg}'`
+      db.query(sql1,function (err, result) {
+        if (err){
+          console.log('[SELECT ERROR] - ',err.message);
+          return;
+        } else{
+          if (result.affectedRows == 0) {
+            sql1 = `insert into eviitem(RefRItem,EviItem,Dict,Confidence) values(${id},'${phase}','s${fg}','${c}')`
+            db.query(sql1, function (err, result) {
+              if (err) {
+                console.log('[SELECT ERROR] - ', err.message);
+                return;
+              }
+            })
+          }
+        }
+      })
+      fg++
+    }
+  }
+  let s = stack.join('')
+  res = single(s,data)
+  //将顶级目标论证结果及解析后的论证模式写入reviewItem
+  let sql2 = `UPDATE reviewitem SET result=${res[0]},ModeAfter='${s}' WHERE ID = ${id}`
+  db.query(sql2,function (err, result) {
+    if (err){
+      console.log('[SELECT ERROR] - ',err.message);
+      return;
+    }
+  })
+  return res[0]
+}
+*/
+
+/*
 const HandleMode = function (str, data, id) {
   var a = str.lastIndexOf('(')
   var b = str.indexOf(')')
@@ -56,7 +119,124 @@ const HandleMode = function (str, data, id) {
   })
   return res[0]
 }
-
+*/
+const TransMode = function (str,id) {
+  let stack = [] //转换后模式
+  let phase = [] //基本模式
+  let tmp = [] //辅助空间
+  let arr = str.split('')
+  let fg = 0
+  let len = arr.length
+  let res = null
+  for (let i = 0; i < len; i++) {
+    let unit = arr[i]
+    if (unit !== ')') {
+      stack.push(unit)
+    } else {
+      tmp = []
+      let item = stack.pop()
+      while (item !== '(') {
+        tmp.push(item)
+        item = stack.pop()
+      }
+      tmp.reverse()
+      phase.push({
+        parent: `s${fg}`,
+        child: tmp.join('')
+      })
+      stack.push(`s${fg}`)
+      let sql1 = `insert into eviitem(RefRItem,EviItem,Dict) values(${id},'${tmp.join('')}','s${fg}')`
+      db.query(sql1, function (err, result) {
+        if (err) {
+          console.log('[SELECT ERROR] - ', err.message);
+          return;
+        }
+      })
+      fg++
+    }
+  }
+  let s = stack.join('')
+  // res = single(s,data)
+  //将顶级目标论证结果及解析后的论证模式写入reviewItem
+  let sql2 = `UPDATE reviewitem SET ModeAfter='${s}' WHERE ID = ${id}`
+  db.query(sql2,function (err, result) {
+    if (err){
+      console.log('[SELECT ERROR]',err.message);
+      return;
+    }
+  })
+  return s
+}
+const HandleMode = function (str, data, id) {
+  let stack = [] //转换后模式
+  let phase = [] //基本模式
+  let tmp = [] //辅助空间
+  let arr = str.split('')
+  let fg = 0
+  let len = arr.length
+  let res = null
+  for (let i = 0; i < len; i++) {
+    let unit = arr[i]
+    if (unit !== ')') {
+      stack.push(unit)
+    } else {
+      tmp = []
+      let item = stack.pop()
+      while (item !== '(') {
+        tmp.push(item)
+        item = stack.pop()
+      }
+      tmp.reverse()
+      stack.push(`s${fg}`)
+      res = single(tmp.join(''),data)
+      //将S0-Sn论证结果res写入eviItem
+      res = res.map((item) => {return item.toFixed(2)})
+      data.push({dict: `s${fg}`, confidence: res})
+      let c = res.join()
+      let sql1 = ''
+      sql1 = `Update eviitem Set Confidence='${c}' where RefRItem = ${id} AND Dict='s${fg}'`
+      db.query(sql1,function (err) {
+        if (err){
+          console.log('[SELECT ERROR] - ',err.message);
+          return;
+        }
+      })
+      fg++
+    }
+  }
+  let s = stack.join('')
+  res = single(s,data)
+  //将顶级目标论证结果及解析后的论证模式写入reviewItem
+  let sql2 = `UPDATE reviewitem SET result='${res[0]}' WHERE ID = ${id}`
+  db.query(sql2,function (err) {
+    if (err){
+      console.log('[SELECT ERROR]',err.message);
+      return;
+    }
+  })
+  return res[0]
+}
+const BuildTree = function (str, data) {
+  let tNode = []
+  let same = SplitMode(str)[0]
+  same.forEach((item) => {
+    if (item.indexOf('s') === -1) {
+      tNode.push({
+        label: item
+      })
+    } else {
+      let pos = Common.AliveInObj(data, 'dict', item)
+      if(pos !== -1) {
+        let mode = data[pos].EviItem
+        tNode.push({
+          label: item,
+          children: BuildTree(mode,data)
+        })
+      }
+    }
+  })
+  return tNode.length? {label: str, children: tNode} : {label: str}
+}
 /*划定提升范围*/
 const PaintRange = function (str, oldV, newV, data, top = newV) {
   let [same, flag] = SplitMode(str)
@@ -162,4 +342,4 @@ var single = function (str, data) {
   return res
 }
 
-module.exports = { HandleMode, PaintRange }
+module.exports = { HandleMode, TransMode, PaintRange, BuildTree }
