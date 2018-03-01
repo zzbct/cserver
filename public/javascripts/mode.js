@@ -219,23 +219,26 @@ const HandleMode = function (str, data, id) {
 const BuildTree = function (str, data) {
   let tNode = []
   let same = SplitMode(str)[0]
+  let pos
   same.forEach((item) => {
     if (item.indexOf('s') === -1) {
+      pos = Common.AliveInObj(data, 'dict', item)
+      let discribe = data[pos].EviItem
       tNode.push({
-        label: item
+        label: `目标${item}:${discribe}`
       })
     } else {
-      let pos = Common.AliveInObj(data, 'dict', item)
+      pos = Common.AliveInObj(data, 'dict', item)
       if(pos !== -1) {
         let mode = data[pos].EviItem
         tNode.push({
-          label: item,
+          label: `${item}:${mode}`,
           children: BuildTree(mode,data)
         })
       }
     }
   })
-  return tNode.length? {label: str, children: tNode} : {label: str}
+  return tNode
 }
 /*划定提升范围*/
 const PaintRange = function (str, oldV, newV, data, top = newV) {

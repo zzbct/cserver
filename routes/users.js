@@ -125,6 +125,7 @@ router.get('/argu/subs',function (req,res) {
   var mode = null
   var subs = null
   var tree = null
+  var dict = null
   db.query(sql1,function (err, result) {
     if (err) {
       console.log('[SELECT ERROR11] - ', err.message);
@@ -136,17 +137,32 @@ router.get('/argu/subs',function (req,res) {
     } else {
       mode = item.ModeAfter
     }
+    db.query(sql2, function (err, result) {
+      if (err) {
+        console.log('[SELECT ERROR] - ', err.message)
+        return;
+      }
+      let i = 0
+      subs = result.reduce((pre, cur) => {
+        return pre.concat(cur.EviItem.split(';').map((item) => {
+          if (cur.dict.indexOf('s') === -1) {
+            i++
+            dict = i
+          } else {
+            dict = cur.dict
+          }
+          return {EviItem: item, dict: dict, eviID: cur.eviID}
+        }))
+      }, [])
+      let node = Mode.BuildTree(mode, subs)
+      tree = node.length ? {label: `论证目标：${mode}`, children: node} : {label: mode}
+      let data = {
+        subs,
+        tree
+      }
+      res.send(data)
+    })
   })
-  db.query(sql2, function (err, result) {
-    if (err) {
-      console.log('[SELECT ERROR] - ', err.message)
-      return;
-    }
-    subs = result
-    tree = Mode.BuildTree(mode, subs)
-    res.send(subs)
-  })
-
 })
 
 /*获取论证目标信息（cid）*/
@@ -154,25 +170,36 @@ router.get('/argu/goal',function (req,res) {
   var id = req.query.id;
   var sql1 = `SELECT * FROM reviewitem WHERE ID=${id}`
   var sql2 = `SELECT EviItem,dict,eviID FROM eviitem where RefRItem=${id}`
+  var subs = null
   db.query(sql1,function (err, result) {
     if (err) {
       console.log('[SELECT ERROR]', err.message);
       return;
     }
     var item = result[0]
-    db.query(sql2,function (err, result) {
+    db.query(sql2,function (err, result2) {
       if (err) {
         console.log('[SELECT ERROR]', err.message)
         return;
       }
       if (item.Mode === null) {
+        subs = result2.reduce((pre, cur) => {
+          return pre.concat(cur.EviItem.split(';'))
+        }, [])
         let m = ''
-        let len = result.length
+        let len = subs.length
         for (let i = 1; i < len; i++) {
           m += i + '&'
         }
         m += len
         item.Mode = m
+        let sql3 = `UPDATE reviewitem SET ModeAfter='${m}',Mode='${m}' WHERE ID = ${id}`
+        db.query(sql3,function (err) {
+          if (err){
+            console.log('[SELECT ERROR]',err.message);
+            return;
+          }
+        })
       }
       var obj = {
         ID: item.ID,
