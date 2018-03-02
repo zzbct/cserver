@@ -63,7 +63,6 @@ function isClass(o){
 
 
 //判断两个对象是否对等
-
 function deepDiff (obj1, obj2) {
   var o1 = obj1 instanceof Object;
   var o2 = obj2 instanceof Object;

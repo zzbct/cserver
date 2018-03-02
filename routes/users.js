@@ -151,11 +151,11 @@ router.get('/argu/subs',function (req,res) {
           } else {
             dict = cur.dict
           }
-          return {EviItem: item, dict: dict, eviID: cur.eviID}
+          return {EviItem: item, dict: dict + '', eviID: cur.eviID}
         }))
       }, [])
       let node = Mode.BuildTree(mode, subs)
-      tree = node.length ? {label: `论证目标：${mode}`, children: node} : {label: mode}
+      tree = node.length ? {label: `论证目标:${mode}`, children: node} : {label: mode}
       let data = {
         subs,
         tree
@@ -489,7 +489,7 @@ router.post('/argu/results',function (req,res) {
     })
   })
   /*解析论证模式*/
-   let d = Mode.HandleMode(mode, argu, id)
+   let d = Mode.HandleMode(mode, argu, id).toFixed(2)
   /*Bayes目标符合性论证*/
    res.send({
      code: 200,
@@ -561,5 +561,47 @@ function  formalConf (x){
   let g = Number(x.sr) - m[0]
   let q = g < m[1] ? m[1] - g : 0
   return [Number(x.sr), Number(q.toFixed(2)), Number((1 - Number(x.sr) - q).toFixed(2)) ]
+}
+
+//判断是否需要新增证据才能进行论证
+function deepIntergrity(obj, evi) {
+  var str = obj.label.split(':')[1]
+  var [arr,flag] = Mode.SplitMode(str)
+  var len = arr.length
+  var empty = []
+  if (flag === 1) {//&
+    for(let i = 0; i < len; i++) {
+      if (arr[i].indexOf('s') === -1) {
+        if (Common.AliveInObj(evi, 'dict', arr[i]) === -1) {
+          empty.push(arr[i])
+        }
+      } else {
+        let pos = Common.AliveInObj(obj.children, 'label', arr[i],true)
+        let s = obj.children[pos]
+        let part = deepIntergrity(s,evi)
+        empty = empty.concat(part)
+      }
+    }
+  } else {
+    let j = 0
+    for(let i = 0; i < len; i++) {
+      if (arr[i].indexOf('s') === -1) {
+        if (Common.AliveInObj(evi, 'dict', arr[i]) !== -1) {
+          return []
+        } else {
+          j++
+        }
+      } else {
+        let pos = Common.AliveInObj(obj.children, 'label', arr[i],true)
+        let s = obj.children[pos]
+        let part = deepIntergrity(s,evi)
+        empty = empty.concat(part)
+      }
+    }
+    if (j === len) {
+      empty.push(arr.join('or'))
+    }
+  }
+  return empty
 }
 module.exports = router;

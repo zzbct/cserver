@@ -231,6 +231,7 @@ const BuildTree = function (str, data) {
       pos = Common.AliveInObj(data, 'dict', item)
       if(pos !== -1) {
         let mode = data[pos].EviItem
+
         tNode.push({
           label: `${item}:${mode}`,
           children: BuildTree(mode,data)
@@ -345,4 +346,4 @@ var single = function (str, data) {
   return res
 }
 
-module.exports = { HandleMode, TransMode, PaintRange, BuildTree }
+module.exports = { HandleMode, TransMode, PaintRange, BuildTree, SplitMode }
