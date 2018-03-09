@@ -167,7 +167,7 @@ const TransMode = function (str,id) {
   })
   return s
 }
-const HandleMode = function (str, data, id) {
+const HandleMode = function (str, data, id, uId) {
   let stack = [] //转换后模式
   let phase = [] //基本模式
   let tmp = [] //辅助空间
@@ -206,13 +206,37 @@ const HandleMode = function (str, data, id) {
   }
   let s = stack.join('')
   res = single(s,data)
-  //将顶级目标论证结果及解析后的论证模式写入reviewItem
-  let sql2 = `UPDATE reviewitem SET result='${res[0]}' WHERE ID = ${id}`
-  db.query(sql2,function (err) {
+  let sql3 =  `SELECT result FROM reviewitem WHERE ID=${id}`
+  db.query(sql3,function (err, result) {
     if (err){
       console.log('[SELECT ERROR]',err.message);
       return;
     }
+    let dats = null
+    let item = result[0].result
+    if (!item || !item.length) {
+      dats = `${uId}-${res[0]};`
+    } else {
+      dats = item.split(';')
+      let arr = dats.map((item) => {
+        let tmp = item.split('-')
+        return {id: tmp[0], results: tmp[1]}
+      })
+      let pos = Common.AliveInObj(arr, "id", uId)
+      if (pos !== -1) {
+        dats.splice(pos, 1)
+      }
+      dats.push(`${uId}-${res[0]}`)
+      dats = dats.join(';')
+    }
+    //将顶级目标论证结果及解析后的论证模式写入reviewItem
+    let sql2 = `UPDATE reviewitem SET result='${dats}' WHERE ID = ${id}`
+    db.query(sql2,function (err) {
+      if (err){
+        console.log('[SELECT ERROR]',err.message);
+        return;
+      }
+    })
   })
   return res[0]
 }

@@ -28,6 +28,7 @@ router.get('/', function(req, res, next) {
 })
 
 router.get('/goals',function (req,res) {
+  var uId = req.query.userID;
   var phase = '';
   var stage = req.query.stage;
   var character = req.query.character;
@@ -74,12 +75,13 @@ router.get('/goals',function (req,res) {
     var set = [];
     result.forEach((item) => {
       var t;
+      let rt = Common.FilterById(item.result, uId)
       if(!item.threshold && item.threshold !== 0) {
         t = '无';
-      } else if(!item.result && item.result !== 0) {
+      } else if(!rt && rt !== 0) {
         t = '无';
       } else{
-        t = item.result >= item.threshold ? `达到要求(>=${item.threshold})` : `未达到要求(<${item.threshold})`
+        t = rt >= item.threshold ? `达到要求(>=${item.threshold})` : `未达到要求(<${item.threshold})`
       }
       var obj = {
         ID: item.ID,
@@ -87,7 +89,7 @@ router.get('/goals',function (req,res) {
         Stage: item.Stage,
         Customize: item.Customize === 1 ? '自定义' : '标准',
         threshold: (item.threshold || item.threshold === 0) ? item.threshold : '未设定',
-        state: (item.result || item.result === 0) ? item.result : '未论证',
+        state: (rt || rt === 0) ? rt : '未论证',
         result: t,
         writable: false
       }
@@ -168,6 +170,7 @@ router.get('/argu/subs',function (req,res) {
 /*获取论证目标信息（cid）*/
 router.get('/argu/goal',function (req,res) {
   var id = req.query.id;
+  var uId = req.query.userID;
   var sql1 = `SELECT * FROM reviewitem WHERE ID=${id}`
   var sql2 = `SELECT EviItem,dict,eviID FROM eviitem where RefRItem=${id}`
   var subs = null
@@ -177,6 +180,7 @@ router.get('/argu/goal',function (req,res) {
       return;
     }
     var item = result[0]
+    let rt = Common.FilterById(item.result, uId)
     db.query(sql2,function (err, result2) {
       if (err) {
         console.log('[SELECT ERROR]', err.message)
@@ -206,7 +210,7 @@ router.get('/argu/goal',function (req,res) {
         CheckItem: item.CheckItem,
         threshold: (item.threshold || item.threshold === 0) ? item.threshold : '未设定',
         mode: item.Mode,
-        result: (item.result || item.result === 0) ? item.result : '未论证'
+        result: (rt || rt === 0) ? rt : '未论证'
       }
       res.send(obj)
     })
@@ -284,6 +288,7 @@ router.get('/cost/static',function (req,res) {
       return;
     }
     let item = result[0]
+    let rt = Common.FilterById(item.result, id)
     var url = `http://${base}:8080/yw/review/getItemForm?RefRItem=${cId}`
     var opt = {
       host:base,
@@ -310,7 +315,7 @@ router.get('/cost/static',function (req,res) {
           ID: item.ID,
           CheckItem: item.CheckItem,
           threshold: item.threshold? item.threshold : '未设定',
-          result: item.result? item.result : '未论证',
+          result: rt? rt : '未论证',
           total: evis.length
         }
         res.send(obj)
@@ -339,7 +344,8 @@ router.get('/cost/analyse',function (req,res) {
     let item = result1[0]
     let threshold = item.threshold
     let mode = item.ModeAfter
-    let rt1 = item.result
+    let rt = Common.FilterById(item.result, id)
+    let rt1 = +rt
     db.query(sql2, function (err, result2) {  //2获得子目标
       if (err) {
         console.log('[SELECT ERROR] - ', err.message);
@@ -453,6 +459,7 @@ router.post('/argu/results',function (req,res) {
   var mode = req.body.mode
   var id = req.body.refItem
   var cInfo = req.body.confidenceInfo
+  var uId = req.body.userID
   var argu = [] //聚拢支持同一目标的证据信息
   var dict = [] //辅助空间
   /*聚拢支持同一目标的证据信息*/
@@ -490,7 +497,7 @@ router.post('/argu/results',function (req,res) {
     })
   })
   /*解析论证模式*/
-   let d = Mode.HandleMode(mode, argu, id).toFixed(2)
+   let d = Mode.HandleMode(mode, argu, id, uId ).toFixed(2)
   /*Bayes目标符合性论证*/
    res.send({
      code: 200,

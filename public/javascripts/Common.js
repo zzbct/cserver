@@ -86,4 +86,23 @@ function deepDiff (obj1, obj2) {
   return true;
 }
 
-module.exports = {AliveInObj, deepCopy, deepDig, deepDiff}
+function FilterById (str, id) {
+  if (!str) {
+    return str
+  }
+  let data = str.split(';')
+  let arr = data.map((item) => {
+    let tmp = item.split('-')
+    return {id: tmp[0], results: tmp[1]}
+  })
+  let pos = AliveInObj(arr, "id", id)
+  console.log(str, pos, id)
+
+  let rt = null
+  if (pos !== -1) {
+    rt = arr[pos].results
+  }
+  return rt
+}
+
+module.exports = {AliveInObj, deepCopy, deepDig, deepDiff, FilterById}
