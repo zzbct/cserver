@@ -214,8 +214,9 @@ const HandleMode = function (str, data, id, uId) {
     }
     let dats = null
     let item = result[0].result
+    let r = res[0].toFixed(2)
     if (!item || !item.length) {
-      dats = `${uId}-${res[0]};`
+      dats = `${uId}-${r}`
     } else {
       dats = item.split(';')
       let arr = dats.map((item) => {
@@ -224,9 +225,10 @@ const HandleMode = function (str, data, id, uId) {
       })
       let pos = Common.AliveInObj(arr, "id", uId)
       if (pos !== -1) {
-        dats.splice(pos, 1)
+        dats.splice(pos, 1, `${uId}-${r}`)
+      } else {
+        dats.push(`${uId}-${r}`)
       }
-      dats.push(`${uId}-${res[0]}`)
       dats = dats.join(';')
     }
     //将顶级目标论证结果及解析后的论证模式写入reviewItem
