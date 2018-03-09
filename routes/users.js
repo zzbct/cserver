@@ -431,12 +431,13 @@ router.get('/cost/analyse',function (req,res) {
           let rt7 = []
           Common.deepDig(rt6, 'evi', 'advice', rt7)
           let cost = Evi.brushShare(rt7)
-          rt3 = rt3.map((item) => {
+          let fix = []
+          rt3.forEach((item) => {
             if (item.dict.indexOf('s') === -1) {
-              return item
+             fix.push(item)
             }
           })
-          res.send({code: 200, cost, dataTree: {first: rt6, matrixB: rt3, matrixS: rt5, res: rt7}})
+          res.send({code: 200, cost, dataTree: {first: rt6, matrixB: fix, matrixS: rt5, res: rt7}})
         })
       }).on('error', function(e) {
         console.log("Got error: " + e.message)
