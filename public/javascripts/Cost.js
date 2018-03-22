@@ -4,8 +4,6 @@ var Common = require('./Common')
 
 var xarr = []
 var cost = Number.MAX_VALUE
-
-
 /*获得直接受证据支持的子目标提升0.01*t所花费的最小成本*/
 const MatrixBaseEvi = function (start, end, eviSet) {
   var t = 0
@@ -45,6 +43,9 @@ const MatrixBaseEvi = function (start, end, eviSet) {
   return result
 }
 
+/*
+必须提升第i个证据时，前i个证据下提升目标符合性到k的最小成本
+*/
 var PcostEvi = function (k, i, count, eviStatic) { //min(p(k, i))
   let eviSet = Common.deepCopy(eviStatic)
   let data = eviSet[count]
@@ -117,10 +118,7 @@ const MatrixBaseGoal = function (start, end, eviSet, flag) {
   var result = []
   var temp = []
   var n = eviSet.length
-  while ( t  <= len * 100) { //每提升 0.01的最小成本
-    //每种证据组合下的成本，求最小值 E(k, i) = min (E(k, i-1), min(p(k, i)))
-    //E(k, i) 由前i个可选证据下提升目标符合性到k的最小成本
-    //p(k, i) 必须提升第i个证据时，前i个证据下提升目标符合性到k的最小成本
+  while ( t  <= len * 100) {
     cost = Number.MAX_VALUE
     PcostGoal(t*0.01+start, 0, 0, eviSet, flag)
     matrix[t][0] = cost

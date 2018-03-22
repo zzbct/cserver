@@ -521,9 +521,6 @@ router.post('/threshold',function (req,res) {
   })
 })
 
-
-/*方法*/
-
 //递归计算层级论证目标 s1 = s0 | 3 ,s0 = 1 & 3
 const cbCost = function (arr1, arr2, item, key = 'eviItem') {
   let unit = item.dict

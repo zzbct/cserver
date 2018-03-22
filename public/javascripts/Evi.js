@@ -33,6 +33,16 @@ const CostFunc = function (sour, fa, supp, k , r) {
   } else {
     return Number(Math.exp(12 * (k - r)).toFixed(2))
   }
+  /*
+    f = e(20pt)
+    return Number(Math.exp(20*r*(k-r)))
+  */
+  /*
+    return Number(Math.exp(5 * (k - r) / Math.sqrt(1-r)).toFixed(2))
+  */
+  /*
+    return Number(Math.pow(3, 50*r*(k-r)).toFixed(2))
+  */
 }
 
 /*D-S目标符合性论证*/
